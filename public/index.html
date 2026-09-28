@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI News Dashboard</title>
+<style>
+body{font-family:system-ui,Arial;margin:0;background:#0d1117;color:#e6edf3}
+header{padding:22px;border-bottom:1px solid #30363d;display:flex;justify-content:space-between;gap:12px;align-items:center}
+main{max-width:1200px;margin:auto;padding:20px}
+button,a{background:#238636;color:white;border:0;border-radius:8px;padding:10px 14px;text-decoration:none;cursor:pointer}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+.card{background:#161b22;border:1px solid #30363d;border-radius:12px;padding:16px}
+.item{padding:12px 0;border-bottom:1px solid #30363d}
+.item:last-child{border-bottom:0}
+.important{border-left:4px solid #f0c000;padding-left:10px}
+small{color:#8b949e}
+#status{color:#8b949e}
+</style>
+</head>
+<body>
+<header>
+  <strong>🤖 AI News Dashboard</strong>
+  <span id="status">Загрузка...</span>
+</header>
+<main>
+  <p>
+    <button onclick="refresh()">Обновить сейчас</button>
+    <a href="/api/gmail/start">Подключить Gmail</a>
+  </p>
+  <section class="card">
+    <h2>ИИ-сводка</h2>
+    <div id="summary">—</div>
+  </section>
+  <br>
+  <div class="grid">
+    <section class="card"><h2>📧 Gmail</h2><div id="emails">—</div></section>
+    <section class="card"><h2>📰 Новости</h2><div id="news">—</div></section>
+  </div>
+</main>
+<script>
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function render(d){
+  document.querySelector("#status").textContent=d.updatedAt?"Обновлено: "+new Date(d.updatedAt).toLocaleString():"Нет данных";
+  document.querySelector("#summary").textContent=d.summary||"Нет сводки.";
+  document.querySelector("#emails").innerHTML=(d.emails||[]).map(x=>`<div class="item ${x.important?"important":""}"><b>${esc(x.subject)}</b><br><small>${esc(x.from)} · ${esc(x.date)}</small><p>${esc(x.snippet)}</p></div>`).join("")||"Gmail пока не подключён.";
+  document.querySelector("#news").innerHTML=(d.news||[]).map(x=>`<div class="item ${x.important?"important":""}"><b>${esc(x.title)}</b><br><small>${esc(x.pubDate)}</small><p>${esc(x.description)}</p>${x.link?`<a href="${esc(x.link)}" target="_blank">Открыть</a>`:""}</div>`).join("")||"Нет новостей.";
+}
+async function load(){const r=await fetch("/api/dashboard");render(await r.json())}
+async function refresh(){document.querySelector("#status").textContent="Обновление...";const r=await fetch("/api/refresh",{method:"POST"});render(await r.json())}
+load();
+setInterval(load,60*60*1000);
+</script>
+</body>
+</html>
